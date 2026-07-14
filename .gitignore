@@ -1,0 +1,10 @@
+/target
+Cargo.lock.orig
+*.swp
+.DS_Store
+
+# Never commit operator credentials or signing keys that may land here during
+# local testing.
+*.token
+*.key
+mosskeys.toml

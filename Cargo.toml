@@ -1,0 +1,46 @@
+[workspace]
+resolver = "3"
+members = ["crates/mosskeys-core", "crates/mosskeys-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/moss-piglet/mosskeys-cli"
+homepage = "https://mosskeys.app"
+
+[workspace.dependencies]
+# The zero-knowledge core, linked NATIVELY. `metamorphic-log` re-exports the
+# checkpoint / note signing surface; `metamorphic-crypto` is the single source of
+# truth for primitives (keygen used only in tests). These are sibling working
+# trees during co-development; `[patch.crates-io]` below pins metamorphic-crypto
+# so both members resolve the SAME crypto core (no parallel stack).
+metamorphic-log = { path = "../metamorphic-log" }
+metamorphic-crypto = { path = "../metamorphic-crypto" }
+
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "json",
+    "rustls-tls",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+toml = "0.8"
+directories = "5"
+clap = { version = "4", features = ["derive", "env"] }
+
+# Build against the sibling metamorphic-crypto working tree. metamorphic-log
+# declares `metamorphic-crypto = "0.10.5"` from crates.io; this patch redirects
+# that (and our direct dev-dependency) to the local checkout so there is exactly
+# one crypto core in the graph. The path version (0.10.5) satisfies the req.
+[patch.crates-io]
+metamorphic-crypto = { path = "../metamorphic-crypto" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
+panic = "abort"
