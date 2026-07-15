@@ -21,11 +21,6 @@ env:
   # (cargo-audit, cargo-cyclonedx) installs cleanly — those tools raise their own
   # MSRV over time. MSRV compatibility is still verified in CI.
   RUST_TOOLCHAIN: "1.90"
-  # Exact crates.io versions of the sibling crypto crates the workspace pins via
-  # `[patch.crates-io]` during local dev. Re-pinned into Cargo.lock in CI/release
-  # so `--locked` stays honest after decoupling from the sibling working trees.
-  METAMORPHIC_CRYPTO_VERSION: "0.10.5"
-  METAMORPHIC_LOG_VERSION: "0.1.10"
 
 jobs:
   # --- Fail-fast gates before any build/publish work ---
@@ -43,10 +38,8 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
-      - name: Re-pin sibling crates from crates.io
-        run: |
-          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
-          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+      - name: Resolve sibling crates from crates.io
+        run: cargo fetch
 
       # The release is triggered by a `v*` tag, but `cargo publish` reads the
       # version from Cargo.toml. If they disagree (e.g. the tag was pushed before
@@ -119,11 +112,9 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Re-pin sibling crates from crates.io
+      - name: Resolve sibling crates from crates.io
         shell: bash
-        run: |
-          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
-          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+        run: cargo fetch
 
       - name: Install cross linker
         if: matrix.apt != ''
@@ -203,10 +194,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
-      - name: Re-pin sibling crates from crates.io
-        run: |
-          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
-          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+      - name: Resolve sibling crates from crates.io
+        run: cargo fetch
 
       - name: Download all build artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -276,10 +265,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
-      - name: Re-pin sibling crates from crates.io
-        run: |
-          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
-          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+      - name: Resolve sibling crates from crates.io
+        run: cargo fetch
 
       # Trusted publishing (OIDC): exchanges the workflow's short-lived GitHub
       # OIDC token for a temporary crates.io token. No long-lived
