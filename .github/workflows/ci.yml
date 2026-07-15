@@ -27,13 +27,12 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
-      # Re-pin ONLY the two decoupled crates to their crates.io source+checksum
-      # (same versions), leaving the rest of Cargo.lock untouched, so the
-      # `--locked` build below stays reproducible.
-      - name: Re-pin sibling crates from crates.io
-        run: |
-          cargo update -p metamorphic-crypto --precise 0.10.5
-          cargo update -p metamorphic-log --precise 0.1.10
+      # Re-add metamorphic-log / metamorphic-crypto to Cargo.lock from crates.io
+      # (the decouple step removed their sibling-path entries). Their exact
+      # versions are pinned in Cargo.toml, so this is deterministic and leaves
+      # every other locked dependency untouched; the `--locked` build then holds.
+      - name: Resolve sibling crates from crates.io
+        run: cargo fetch
 
       - name: Format check
         run: cargo fmt --check
@@ -68,9 +67,7 @@ jobs:
         with:
           toolchain: "1.85"
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - name: Re-pin sibling crates from crates.io
-        run: |
-          cargo update -p metamorphic-crypto --precise 0.10.5
-          cargo update -p metamorphic-log --precise 0.1.10
+      - name: Resolve sibling crates from crates.io
+        run: cargo fetch
       - name: Build on MSRV
         run: cargo build --locked
