@@ -5,6 +5,8 @@
 //! * [`config`] — persistent config + credential resolution (env-first).
 //! * [`client`] — the blocking write-API client (#60b), with typed errors.
 //! * [`signing`] — local BYOK checkpoint signing via the native crypto core.
+//! * [`keygen`] — local BYOK `mosslet/key-history/v1` key generation, byte-for-byte
+//!   interoperable with the browser (#77) and Mix (#78) impls.
 //!
 //! The crate transmits only already-public material and client-signed notes;
 //! signing keys are read locally and never logged or sent. It is published as a
@@ -19,8 +21,10 @@
 pub mod client;
 pub mod config;
 pub mod error;
+pub mod keygen;
 pub mod signing;
 
 pub use client::{AppendResult, CheckpointMaterial, Client, EntryInput, PublishedCheckpoint};
 pub use config::Config;
 pub use error::{ApiError, ApiErrorCode, Error, Result};
+pub use keygen::{Artifact, KeySet, KeyTriple, NamespaceMeta, SecurityLevel};

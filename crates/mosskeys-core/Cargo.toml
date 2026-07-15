@@ -10,12 +10,10 @@ homepage.workspace = true
 
 [dependencies]
 metamorphic-log.workspace = true
+metamorphic-crypto.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 directories.workspace = true
-
-[dev-dependencies]
-metamorphic-crypto.workspace = true

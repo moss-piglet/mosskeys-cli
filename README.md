@@ -25,6 +25,7 @@ crates/
 
 | Command | Purpose |
 |---|---|
+| `mosskeys keygen` | Generate a `mosslet/key-history/v1` key set **locally** (BYOK). Writes the private halves to a `0600` file (refuses to overwrite) and prints only the public halves. Byte-for-byte interoperable with the browser + Mix reference impls. |
 | `mosskeys publish` | Append one/many public-key entries (flags, `--file`, or stdin JSON). Idempotent. |
 | `mosskeys sync` | Daemon: watch a JSON source and continuously publish. At-least-once via server dedup, with backoff/retry. |
 | `mosskeys checkpoint` | Two-phase local BYOK signing: fetch head → sign offline → publish (server verifies + head-match). `--watch` for a cadence. |
@@ -34,6 +35,21 @@ Global flags: `--json` (machine output for agents/scripts), `--namespace/-n`,
 `--base-url`, `--config`, plus per-command `--dry-run`. Stable exit codes map the
 API error taxonomy (`unauthorized`, `forbidden`, `not_found`, `head_mismatch`,
 `invalid_request`, `rate_limited`). Colour honours `NO_COLOR` / non-TTY / `--json`.
+
+## Quickstart
+
+```sh
+# 1. Generate your identity's key set locally (keys never leave this machine).
+#    The private halves land in mosskeys-<slug>-<label>-private-keys.json (0600).
+mosskeys keygen --namespace acme --security-level cat5 --label alice@acme.com
+
+# 2. Publish the PUBLIC halves printed above to your namespace's log.
+mosskeys publish --namespace acme --label alice@acme.com \
+  --enc-x25519 <base64> --enc-pq <base64> --signing-pub <base64>
+```
+
+`keygen` is fully offline — it never contacts the server, so `--security-level`
+is operator-supplied (match it to your namespace's declared policy).
 
 ## Build & test
 
@@ -46,7 +62,10 @@ cargo clippy --all-targets
 The signing e2e tests generate a real hybrid keypair via `metamorphic-crypto`
 and verify a CLI-signed note through the same `metamorphic-log` verifier the
 server uses — proving verify-success and head-mismatch semantics without a live
-server.
+server. The keygen tests feed CLI-generated public keys through the same
+`metamorphic-log` `key_history_v1` leaf/canonical-bytes path the server runs,
+cross-check the per-level byte lengths, and assert private halves never appear
+in the transmitted envelope.
 
 ## Local development
 

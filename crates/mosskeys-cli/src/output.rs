@@ -45,7 +45,7 @@ pub fn exit_code(err: &Error) -> i32 {
         Error::Config(_) => exit::CONFIG,
         Error::Signing(_) => exit::SIGNING,
         Error::Transport(_) => exit::TRANSPORT,
-        Error::Malformed { .. } | Error::Io(_) => exit::GENERIC,
+        Error::Crypto(_) | Error::Malformed { .. } | Error::Io(_) => exit::GENERIC,
     }
 }
 

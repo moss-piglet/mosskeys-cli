@@ -40,6 +40,9 @@ pub struct GlobalArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Generate a key-history key set locally (BYOK; keys never leave this host).
+    Keygen(crate::commands::keygen::KeygenArgs),
+
     /// Append one or more public-key entries to a namespace's log.
     Publish(crate::commands::publish::PublishArgs),
 

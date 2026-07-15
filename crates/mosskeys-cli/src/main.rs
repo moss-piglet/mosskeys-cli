@@ -28,6 +28,7 @@ fn run(cli: &Cli) -> i32 {
     reporter.banner();
 
     let result = match &cli.command {
+        Command::Keygen(args) => commands::keygen::run(&cli.global, args),
         Command::Publish(args) => commands::publish::run(&cli.global, args),
         Command::Sync(args) => commands::sync::run(&cli.global, args),
         Command::Checkpoint(args) => commands::checkpoint::run(&cli.global, args),

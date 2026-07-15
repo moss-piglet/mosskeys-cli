@@ -44,6 +44,10 @@ pub enum Error {
     #[error("signing error: {0}")]
     Signing(String),
 
+    /// Local key generation failed (an unsupported suite/level combination).
+    #[error("crypto error: {0}")]
+    Crypto(String),
+
     /// Local IO (reading a key file, config, stdin).
     #[error("io error: {0}")]
     Io(String),

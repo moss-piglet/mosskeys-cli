@@ -13,9 +13,10 @@ homepage = "https://mosskeys.app"
 [workspace.dependencies]
 # The zero-knowledge core, linked NATIVELY. `metamorphic-log` re-exports the
 # checkpoint / note signing surface; `metamorphic-crypto` is the single source of
-# truth for primitives (keygen used only in tests). These are sibling working
-# trees during co-development; `[patch.crates-io]` below pins metamorphic-crypto
-# so both members resolve the SAME crypto core (no parallel stack).
+# truth for primitives (keygen for the `mosskeys keygen` command + tests). These
+# are sibling working trees during co-development; `[patch.crates-io]` below pins
+# metamorphic-crypto so both members resolve the SAME crypto core (no parallel
+# stack).
 metamorphic-log = { path = "../metamorphic-log" }
 metamorphic-crypto = { path = "../metamorphic-crypto" }
 
