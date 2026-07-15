@@ -40,7 +40,7 @@ crates/
 
 | Command | Purpose |
 |---|---|
-| `mosskeys keygen` | Generate a `mosslet/key-history/v1` key set **locally** (BYOK). Writes the private halves to a `0600` file (refuses to overwrite) and prints only the public halves. Byte-for-byte interoperable with the browser and Mix reference implementations. |
+| `mosskeys keygen` | Generate a `mosskeys/key-history/v1` key set **locally** (BYOK). Writes the private halves to a `0600` file (refuses to overwrite) and prints only the public halves. Byte-for-byte interoperable with the browser and Mix reference implementations. |
 | `mosskeys publish` | Append one or many public-key entries (flags, `--file`, or stdin JSON). Idempotent. |
 | `mosskeys sync` | Daemon: watch a JSON source and continuously publish. At-least-once via server dedup, with backoff and retry. |
 | `mosskeys checkpoint` | Two-phase local BYOK signing: fetch head, sign offline, publish (server verifies and head-matches). `--watch` runs it on a cadence. |

@@ -23,7 +23,7 @@
 #        avoids resolver drift into incompatible pre-release transitive deps.
 #
 # The published deps are already on crates.io at the pinned versions
-# (metamorphic-crypto 0.10.5, metamorphic-log 0.1.10). After this script, run
+# (metamorphic-crypto 0.10.5, metamorphic-log 0.1.11). After this script, run
 # `cargo fetch` once to re-add the two entries, then build/publish with `--locked`.
 #
 # Idempotent: safe to run twice (the second run is a no-op).

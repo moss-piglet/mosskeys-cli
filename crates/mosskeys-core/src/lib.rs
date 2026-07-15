@@ -5,7 +5,7 @@
 //! * [`config`] — persistent config + credential resolution (env-first).
 //! * [`client`] — the blocking write-API client (#60b), with typed errors.
 //! * [`signing`] — local BYOK checkpoint signing via the native crypto core.
-//! * [`keygen`] — local BYOK `mosslet/key-history/v1` key generation, byte-for-byte
+//! * [`keygen`] — local BYOK `mosskeys/key-history/v1` key generation, byte-for-byte
 //!   interoperable with the browser (#77) and Mix (#78) impls.
 //!
 //! The crate transmits only already-public material and client-signed notes;
