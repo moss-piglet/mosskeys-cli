@@ -13,6 +13,7 @@
 //!   * the private artifact is written `0600` and refuses to overwrite.
 
 use base64::Engine as _;
+use metamorphic_log::leaf::ContextLabel;
 use metamorphic_log::leaf::key_history_v1::Entry;
 use mosskeys_core::keygen::{self, NamespaceMeta};
 use mosskeys_core::{Artifact, SecurityLevel};
@@ -77,7 +78,13 @@ fn public_keys_accepted_by_leaf_canonical_bytes_path() {
 
     let canonical = entry.canonical_bytes().expect("canonical bytes");
     assert!(!canonical.is_empty());
-    let entry_hash = entry.entry_hash().expect("SHA3-512 entry hash");
+    // Bind the mosskeys brand context into the intra-chain entry hash (the exact
+    // `mosskeys/key-history/v1` label the server passes). canonical_bytes and the
+    // RFC 6962 leaf hash are brand-independent, so they compute unchanged.
+    let label = ContextLabel::parse(keygen::LEAF_FORMAT).expect("valid mosskeys context label");
+    let entry_hash = entry
+        .entry_hash_with_context(&label)
+        .expect("SHA3-512 entry hash");
     assert_eq!(entry_hash.len(), 64);
     // The RFC 6962 Merkle leaf hash (global ordering linkage) also computes.
     entry.rfc6962_leaf_hash().expect("RFC 6962 leaf hash");
@@ -89,7 +96,7 @@ fn artifact_schema_is_frozen() {
     let v = serde_json::to_value(&a).unwrap();
 
     assert_eq!(v["product"], "mosskeys");
-    assert_eq!(v["leaf_format"], "mosslet/key-history/v1");
+    assert_eq!(v["leaf_format"], "mosskeys/key-history/v1");
     assert_eq!(v["security_level"], "cat3");
     assert_eq!(v["label"], "alice@example.com");
     assert_eq!(v["namespace"]["slug"], "demo");
@@ -146,7 +153,7 @@ fn write_is_0600_and_refuses_overwrite() {
     // The written file round-trips to the frozen schema (interop artifact).
     let round: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
-    assert_eq!(round["leaf_format"], "mosslet/key-history/v1");
+    assert_eq!(round["leaf_format"], "mosskeys/key-history/v1");
     assert!(round["private_keys"]["enc_pq"].is_string());
 
     // Refuses to clobber an existing file.

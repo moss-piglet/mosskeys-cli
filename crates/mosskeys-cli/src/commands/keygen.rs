@@ -1,4 +1,4 @@
-//! `mosskeys keygen` — generate a `mosslet/key-history/v1` key set locally.
+//! `mosskeys keygen` — generate a `mosskeys/key-history/v1` key set locally.
 //!
 //! The customer-facing companion to the browser flow (#77) and the operator Mix
 //! task (#78). Keys are generated entirely on this machine via the native

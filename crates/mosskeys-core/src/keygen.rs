@@ -1,4 +1,4 @@
-//! Local, offline generation of the `mosslet/key-history/v1` published-identity
+//! Local, offline generation of the `mosskeys/key-history/v1` published-identity
 //! key set (the customer-facing BYOK keygen surface).
 //!
 //! This is the Rust rung of the single audited keygen path. The browser (WASM,
@@ -41,7 +41,7 @@ use crate::error::{Error, Result};
 /// The internal wire tag for the leaf format. NOT a product name — it is the
 /// versioned `<namespace>/<record-type>/v<N>` label the transparency log binds
 /// into the content hash, shared verbatim across the browser and Mix impls.
-pub const LEAF_FORMAT: &str = "mosslet/key-history/v1";
+pub const LEAF_FORMAT: &str = "mosskeys/key-history/v1";
 
 /// The NIST security posture for a generated key set. Mirrors the namespace
 /// policy `security_level` and drives both the KEM and signature parameter sets.
@@ -135,7 +135,7 @@ impl NamespaceMeta {
     }
 }
 
-/// The frozen `mosslet/key-history/v1` artifact. Serialized field order is the
+/// The frozen `mosskeys/key-history/v1` artifact. Serialized field order is the
 /// wire schema shared byte-for-byte with #77 (browser) and #78 (Mix task).
 #[derive(Debug, Clone, Serialize)]
 pub struct Artifact {
