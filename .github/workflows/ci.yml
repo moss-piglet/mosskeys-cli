@@ -49,6 +49,10 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Decouple from sibling working trees
         run: ./.github/scripts/decouple-from-siblings.sh
+      # Restore the metamorphic-* entries the decouple step removed, so
+      # cargo-audit can resolve a complete Cargo.lock.
+      - name: Resolve sibling crates from crates.io
+        run: cargo fetch
       - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
