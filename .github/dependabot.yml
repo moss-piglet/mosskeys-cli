@@ -1,0 +1,34 @@
+version: 2
+updates:
+  # Keep SHA-pinned GitHub Actions current. Dependabot opens PRs that bump
+  # both the pinned commit SHA and the trailing version comment.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Collapse all action bumps into a single weekly PR instead of one per
+      # action. Review the changelogs together, then merge once.
+      github-actions:
+        patterns:
+          - "*"
+
+  # Cargo dependency updates for the workspace.
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # metamorphic-crypto / metamorphic-log are the crypto core. They ship on
+      # their own release cadence and are pinned to exact, co-released versions
+      # (see the workspace Cargo.toml). Bump them deliberately, not on
+      # Dependabot's schedule, so the CLI always tracks a known-good core.
+      - dependency-name: "metamorphic-crypto"
+      - dependency-name: "metamorphic-log"
+    groups:
+      # Batch low-risk patch/minor bumps. Major bumps (and 0.x minor bumps,
+      # which are breaking) stay as separate PRs for individual review.
+      cargo-minor:
+        update-types:
+          - "minor"
+          - "patch"

@@ -1,0 +1,323 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+
+# Prevent two simultaneous tag pushes from racing the publish steps.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  # Toolchain used to BUILD and PUBLISH the release. Intentionally newer than the
+  # crate's declared MSRV (`rust-version = "1.85"`) so the release tooling
+  # (cargo-audit, cargo-cyclonedx) installs cleanly — those tools raise their own
+  # MSRV over time. MSRV compatibility is still verified in CI.
+  RUST_TOOLCHAIN: "1.90"
+  # Exact crates.io versions of the sibling crypto crates the workspace pins via
+  # `[patch.crates-io]` during local dev. Re-pinned into Cargo.lock in CI/release
+  # so `--locked` stays honest after decoupling from the sibling working trees.
+  METAMORPHIC_CRYPTO_VERSION: "0.10.5"
+  METAMORPHIC_LOG_VERSION: "0.1.10"
+
+jobs:
+  # --- Fail-fast gates before any build/publish work ---
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decouple from sibling working trees
+        run: ./.github/scripts/decouple-from-siblings.sh
+
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Re-pin sibling crates from crates.io
+        run: |
+          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
+          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+
+      # The release is triggered by a `v*` tag, but `cargo publish` reads the
+      # version from Cargo.toml. If they disagree (e.g. the tag was pushed before
+      # bumping Cargo.toml) the publish fails deep into the run. Fail fast here.
+      - name: Verify Cargo.toml version matches tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          crate="$(cargo metadata --no-deps --format-version 1 \
+            | python3 -c 'import json,sys; pkgs=json.load(sys.stdin)["packages"]; print(next(p["version"] for p in pkgs if p["name"]=="mosskeys-cli"))')"
+          echo "tag=${tag} Cargo.toml=${crate}"
+          if [ "${tag}" != "${crate}" ]; then
+            echo "::error::Tag v${tag} does not match Cargo.toml version ${crate}. Bump Cargo.toml (and Cargo.lock) before tagging."
+            exit 1
+          fi
+
+      - name: Format check
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Tests
+        run: cargo test --locked
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Audit dependencies
+        run: cargo audit
+
+  # --- Cross-platform binary matrix ---
+  build:
+    needs: guard
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            apt: gcc-aarch64-linux-gnu
+            linker: aarch64-linux-gnu-gcc
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            apt: musl-tools
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            apt: gcc-aarch64-linux-gnu musl-tools
+            linker: aarch64-linux-gnu-gcc
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decouple from sibling working trees
+        shell: bash
+        run: ./.github/scripts/decouple-from-siblings.sh
+
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Re-pin sibling crates from crates.io
+        shell: bash
+        run: |
+          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
+          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+
+      - name: Install cross linker
+        if: matrix.apt != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.apt }}
+
+      - name: Build
+        shell: bash
+        env:
+          # Point cargo at the cross linker for the linux aarch64 targets. The
+          # release profile (Cargo.toml) already strips the binary per-target, so
+          # no separate `strip` step is needed here.
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.linker }}
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: ${{ matrix.linker }}
+        run: cargo build --locked --release --target ${{ matrix.target }} --bin mosskeys
+
+      - name: Package (tar.gz)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          name="mosskeys-${version}-${{ matrix.target }}"
+          staging="${name}"
+          mkdir -p "${staging}"
+          cp "target/${{ matrix.target }}/release/mosskeys" "${staging}/"
+          cp README.md LICENSE-MIT LICENSE-APACHE "${staging}/" 2>/dev/null || true
+          tar -czf "${name}.tar.gz" "${staging}"
+          echo "ARTIFACT=${name}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Package (zip)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = "${env:GITHUB_REF_NAME}".TrimStart("v")
+          $name = "mosskeys-$version-${{ matrix.target }}"
+          New-Item -ItemType Directory -Force -Path $name | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/mosskeys.exe" -Destination $name
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+          "ARTIFACT=$name.zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      # --- Cosign (keyless signing via GitHub OIDC) ---
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign artifact with cosign
+        shell: bash
+        run: cosign sign-blob --yes --bundle "${ARTIFACT}.cosign.bundle" "${ARTIFACT}"
+
+      # --- Attestation (SLSA build provenance, per artifact) ---
+      - name: Attest artifact
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: ${{ env.ARTIFACT }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            ${{ env.ARTIFACT }}
+            ${{ env.ARTIFACT }}.cosign.bundle
+          if-no-files-found: error
+
+  # --- Aggregate: SBOM + checksums + GitHub Release ---
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decouple from sibling working trees
+        run: ./.github/scripts/decouple-from-siblings.sh
+
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Re-pin sibling crates from crates.io
+        run: |
+          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
+          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+
+      # --- SBOM (CycloneDX) ---
+      # Generated from Cargo.lock so it reflects the exact dependency tree the
+      # binaries were built from. CISA/NIST SSDF/EO 14028 reference CycloneDX.
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked
+
+      - name: Generate SBOM
+        run: cargo cyclonedx --format json --override-filename sbom
+
+      - name: Stage SBOM alongside artifacts
+        run: |
+          # cargo-cyclonedx writes per-crate SBOMs; publish the workspace one.
+          find . -name 'sbom*.json' -maxdepth 3 -print
+          cp "$(find . -name 'sbom*.json' | head -n1)" dist/sbom.json
+
+      # --- Cosign sign the SBOM too ---
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign SBOM with cosign
+        working-directory: dist
+        run: cosign sign-blob --yes --bundle sbom.json.cosign.bundle sbom.json
+
+      # --- Checksums (SHA-512, house standard) ---
+      - name: Compute SHA-512 checksums
+        working-directory: dist
+        run: |
+          sha512sum *.tar.gz *.zip sbom.json > SHA512SUMS 2>/dev/null || \
+            sha512sum $(ls *.tar.gz *.zip sbom.json 2>/dev/null) > SHA512SUMS
+          cat SHA512SUMS
+
+      # --- GitHub Release ---
+      - name: Attach artifacts to GitHub Release
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.cosign.bundle
+            dist/sbom.json
+            dist/SHA512SUMS
+          fail_on_unmatched_files: true
+
+  # --- Publish to crates.io (OIDC trusted publishing) ---
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # Scopes the crates.io OIDC trusted-publishing credential to a dedicated,
+    # protectable environment (Settings → Environments). The trusted-publisher
+    # config on crates.io must use this same environment name.
+    environment: release
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decouple from sibling working trees
+        run: ./.github/scripts/decouple-from-siblings.sh
+
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Re-pin sibling crates from crates.io
+        run: |
+          cargo update -p metamorphic-crypto --precise "${METAMORPHIC_CRYPTO_VERSION}"
+          cargo update -p metamorphic-log --precise "${METAMORPHIC_LOG_VERSION}"
+
+      # Trusted publishing (OIDC): exchanges the workflow's short-lived GitHub
+      # OIDC token for a temporary crates.io token. No long-lived
+      # CARGO_REGISTRY_TOKEN secret is stored anywhere.
+      # One-time setup: crates.io → crate Settings → Trusted Publishing.
+      - name: Authenticate to crates.io (OIDC)
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+        id: crates-auth
+
+      # mosskeys-core must be published before mosskeys-cli (which depends on it).
+      # Both are idempotent: crates.io publishes are immutable, so a resumed/re-run
+      # release must not hard-fail just because the version is already on the index.
+      - name: Publish mosskeys-core to crates.io
+        run: |
+          set +e
+          out="$(cargo publish -p mosskeys-core --locked 2>&1)"; code=$?
+          echo "${out}"
+          if [ "${code}" -ne 0 ]; then
+            if echo "${out}" | grep -q "already exists on crates.io"; then
+              echo "::warning::mosskeys-core ${GITHUB_REF_NAME#v} is already on crates.io; skipping."
+            else
+              exit "${code}"
+            fi
+          fi
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
+      - name: Publish mosskeys-cli to crates.io
+        run: |
+          set +e
+          out="$(cargo publish -p mosskeys-cli --locked 2>&1)"; code=$?
+          echo "${out}"
+          if [ "${code}" -ne 0 ]; then
+            if echo "${out}" | grep -q "already exists on crates.io"; then
+              echo "::warning::mosskeys-cli ${GITHUB_REF_NAME#v} is already on crates.io; skipping."
+            else
+              exit "${code}"
+            fi
+          fi
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}

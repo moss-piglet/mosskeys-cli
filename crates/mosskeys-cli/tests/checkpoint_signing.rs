@@ -25,8 +25,8 @@ use metamorphic_log::note::VerifierKey;
 use mosskeys_core::CheckpointMaterial;
 use mosskeys_core::signing::sign_material;
 
-const ORIGIN: &str = "mosskeys.app/demo";
-const NAME: &str = "mosskeys.app/demo";
+const ORIGIN: &str = "mosskeys.com/demo";
+const NAME: &str = "mosskeys.com/demo";
 
 fn root_b64(byte: u8) -> String {
     base64::engine::general_purpose::STANDARD.encode([byte; 32])

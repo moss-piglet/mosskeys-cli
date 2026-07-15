@@ -24,7 +24,7 @@ pub const TOKEN_ENV: &str = "MOSSKEYS_TOKEN";
 pub const BASE_URL_ENV: &str = "MOSSKEYS_BASE_URL";
 
 /// Default production API base URL.
-pub const DEFAULT_BASE_URL: &str = "https://mosskeys.app";
+pub const DEFAULT_BASE_URL: &str = "https://mosskeys.com";
 
 /// The persisted configuration document.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
