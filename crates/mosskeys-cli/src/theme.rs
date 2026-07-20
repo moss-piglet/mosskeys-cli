@@ -144,6 +144,31 @@ impl Theme {
     pub fn heading(self, s: &str) -> String {
         self.bold(&self.brand(s))
     }
+
+    /// A passed check line: `✓ …` in emerald. (Alias of [`Theme::success`], read
+    /// at the `verify` call sites as a verification result rather than a status.)
+    #[must_use]
+    pub fn check_pass(self, s: &str) -> String {
+        self.success(s)
+    }
+
+    /// A skipped / not-checked line: `· …`, fully muted, so it reads as neutral
+    /// (neither a pass nor a failure) in the check column.
+    #[must_use]
+    pub fn check_skip(self, s: &str) -> String {
+        format!("{} {}", self.dim("·"), self.dim(s))
+    }
+
+    /// An aligned `key   value` detail row: a muted, left-padded key and an
+    /// accented value, indented under the check lines for visual hierarchy.
+    #[must_use]
+    pub fn kv(self, key: &str, value: &str) -> String {
+        format!(
+            "  {}  {}",
+            self.dim(&format!("{key:<6}")),
+            self.accent(value)
+        )
+    }
 }
 
 fn lerp(a: Rgb, b: Rgb, t: f32) -> Rgb {

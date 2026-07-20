@@ -51,6 +51,50 @@ pub enum Error {
     /// Local IO (reading a key file, config, stdin).
     #[error("io error: {0}")]
     Io(String),
+
+    /// A read-path verification check failed (inclusion, consistency, or
+    /// witness co-signature). This is a local, cryptographic outcome, never a
+    /// server-reported error; it drives the `verify` command's exit code.
+    #[error("verification failed: {0}")]
+    Verification(#[from] VerifyError),
+}
+
+/// The closed set of `verify` outcomes, each mapping to a stable exit code.
+///
+/// These are honest, cryptographic results computed locally by the linked
+/// `metamorphic-log` verifier: an append-only log whose head has not been
+/// rewritten passes; a rewrite, a forged proof, or a bad co-signature fails
+/// with the specific reason so shell/CI callers can branch without parsing
+/// text.
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum VerifyError {
+    /// The inclusion proof does not bind the leaf to the checkpoint root: the
+    /// claimed entry is not actually committed at that position.
+    #[error("inclusion proof did not verify against the checkpoint root")]
+    Inclusion,
+
+    /// The consistency proof does not bind the pinned head to the current head:
+    /// the log's history was rewritten, reordered, or truncated (equivocation).
+    #[error("consistency proof did not verify — the log head was rewritten")]
+    Consistency,
+
+    /// A checkpoint co-signature did not verify against the pinned verifier
+    /// key(s), or none of the pinned keys signed the checkpoint.
+    #[error("checkpoint co-signature did not verify against the pinned key(s)")]
+    WitnessCosig,
+
+    /// The head entry is newer than the latest checkpoint, so there is no signed
+    /// root to prove inclusion against yet (re-run once the checkpoint advances).
+    #[error("entry is not yet anchored to a signed checkpoint")]
+    NotAnchored,
+
+    /// A supplied digest did not match the leaf actually committed at the index.
+    #[error("digest does not match the committed leaf at that index")]
+    DigestMismatch,
+
+    /// A served or supplied artifact (proof node, root, note) was malformed.
+    #[error("malformed verification input: {0}")]
+    Malformed(String),
 }
 
 /// The recognised `error.code` values from the #60b contract, with the HTTP

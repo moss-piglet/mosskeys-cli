@@ -1147,7 +1147,7 @@ dependencies = [
 
 [[package]]
 name = "metamorphic-log"
-version = "0.1.11"
+version = "0.2.1"
 dependencies = [
  "getrandom 0.2.17",
  "js-sys",
@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "mosskeys-cli"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "base64",
  "clap",
@@ -1224,8 +1224,9 @@ dependencies = [
 
 [[package]]
 name = "mosskeys-core"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
+ "base64",
  "directories",
  "metamorphic-crypto",
  "metamorphic-log",
