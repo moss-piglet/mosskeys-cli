@@ -1115,7 +1115,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "metamorphic-crypto"
-version = "0.10.5"
+version = "0.10.6"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1135,6 +1135,7 @@ dependencies = [
  "ml-kem",
  "p256",
  "p521",
+ "primeorder",
  "rfc6979",
  "sha2 0.11.0",
  "sha3",
@@ -1211,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "mosskeys-cli"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "base64",
  "clap",
@@ -1224,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "mosskeys-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "base64",
  "directories",

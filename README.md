@@ -18,8 +18,14 @@ The package name is `mosskeys-cli`; the command it installs is `mosskeys`.
 ## Install
 
 ```sh
-cargo install mosskeys-cli   # installs the `mosskeys` binary
+cargo install mosskeys-cli --locked   # installs the `mosskeys` binary
 ```
+
+Use `--locked` so the build uses the versions pinned in the published
+`Cargo.lock`. The crypto core depends on pre-release RustCrypto curve crates,
+and a fresh resolve without `--locked` can pick an incompatible newer
+transitive release. Prebuilt binaries (below) are already built and are
+unaffected.
 
 Prebuilt, signed binaries for macOS (arm64/x64), Linux (x64/arm64, including
 musl), and Windows (x64) are attached to every
