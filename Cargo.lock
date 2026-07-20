@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "mosskeys-cli"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "clap",
@@ -1224,7 +1224,7 @@ dependencies = [
 
 [[package]]
 name = "mosskeys-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "directories",

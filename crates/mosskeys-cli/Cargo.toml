@@ -1,6 +1,6 @@
 [package]
 name = "mosskeys-cli"
-description = "The MossKeys CLI + daemon: publish public key material and sign checkpoints locally (BYOK) against the owner-scoped write API."
+description = "The MossKeys CLI + daemon: publish public key material, sign checkpoints locally (BYOK), and verify key-history proofs read-only and offline."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -13,7 +13,7 @@ name = "mosskeys"
 path = "src/main.rs"
 
 [dependencies]
-mosskeys-core = { version = "0.2.0", path = "../mosskeys-core" }
+mosskeys-core = { version = "0.2.1", path = "../mosskeys-core" }
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
