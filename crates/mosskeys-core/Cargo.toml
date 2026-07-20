@@ -1,6 +1,6 @@
 [package]
 name = "mosskeys-core"
-description = "MossKeys write-API client + local BYOK checkpoint signing (zero-knowledge SDK core for the CLI)."
+description = "MossKeys write + read/verify API client + local BYOK checkpoint signing (zero-knowledge SDK core for the CLI)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
