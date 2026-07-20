@@ -9,7 +9,7 @@
 //! Exit codes are stable and map the #60b error taxonomy so shell/CI callers
 //! can branch without parsing text.
 
-use mosskeys_core::{ApiErrorCode, Error};
+use mosskeys_core::{ApiErrorCode, Error, VerifyError};
 
 use crate::theme::Theme;
 
@@ -27,6 +27,11 @@ pub mod exit {
     pub const RATE_LIMITED: i32 = 9;
     pub const SIGNING: i32 = 10;
     pub const TRANSPORT: i32 = 11;
+    /// A verification check failed (bad inclusion proof, forged co-signature,
+    /// unanchored entry, or digest mismatch). Consistency failures map to
+    /// [`HEAD_MISMATCH`] instead, since a failed consistency proof *is* a
+    /// rewritten head.
+    pub const VERIFICATION: i32 = 12;
 }
 
 /// The exit code for a given error, mapping the API taxonomy.
@@ -45,6 +50,11 @@ pub fn exit_code(err: &Error) -> i32 {
         Error::Config(_) => exit::CONFIG,
         Error::Signing(_) => exit::SIGNING,
         Error::Transport(_) => exit::TRANSPORT,
+        // A failed consistency proof means the log head was rewritten — the
+        // same class of failure as the write path's 409, so it shares the code.
+        Error::Verification(VerifyError::Consistency) => exit::HEAD_MISMATCH,
+        Error::Verification(VerifyError::Malformed(_)) => exit::GENERIC,
+        Error::Verification(_) => exit::VERIFICATION,
         Error::Crypto(_) | Error::Malformed { .. } | Error::Io(_) => exit::GENERIC,
     }
 }
@@ -124,9 +134,25 @@ fn error_json(err: &Error) -> serde_json::Value {
                 "retry_after_secs": api.retry_after_secs,
             }
         }),
+        Error::Verification(v) => serde_json::json!({
+            "ok": false,
+            "error": { "code": verify_code(v), "message": v.to_string() }
+        }),
         other => serde_json::json!({
             "ok": false,
             "error": { "code": "client_error", "message": other.to_string() }
         }),
+    }
+}
+
+/// Stable machine code for a verification failure (mirrors the exit taxonomy).
+fn verify_code(v: &VerifyError) -> &'static str {
+    match v {
+        VerifyError::Inclusion => "inclusion_failed",
+        VerifyError::Consistency => "head_mismatch",
+        VerifyError::WitnessCosig => "cosignature_failed",
+        VerifyError::NotAnchored => "not_anchored",
+        VerifyError::DigestMismatch => "digest_mismatch",
+        VerifyError::Malformed(_) => "malformed_input",
     }
 }

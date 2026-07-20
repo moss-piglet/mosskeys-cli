@@ -23,8 +23,16 @@ pub mod config;
 pub mod error;
 pub mod keygen;
 pub mod signing;
+pub mod verify;
 
-pub use client::{AppendResult, CheckpointMaterial, Client, EntryInput, PublishedCheckpoint};
+pub use client::{
+    AppendResult, CheckpointMaterial, Client, ConsistencyProof, EntryInput, InclusionProof,
+    LabelHead, LatestCheckpoint, PublishedCheckpoint, ReconcileBundle,
+};
 pub use config::Config;
-pub use error::{ApiError, ApiErrorCode, Error, Result};
+pub use error::{ApiError, ApiErrorCode, Error, Result, VerifyError};
 pub use keygen::{Artifact, KeySet, KeyTriple, NamespaceMeta, SecurityLevel};
+pub use verify::{
+    CheckpointHead, CosignReport, parse_checkpoint_head, verify_consistency, verify_inclusion,
+    verify_witness_cosigs,
+};

@@ -52,6 +52,10 @@ pub enum Command {
     /// Sign checkpoints locally (BYOK) and publish them (two-phase handshake).
     Checkpoint(crate::commands::checkpoint::CheckpointArgs),
 
+    /// Verify key-history proofs: inclusion, append-only consistency, and
+    /// witness co-signatures. Read-only and offline-capable; no token required.
+    Verify(crate::commands::verify::VerifyArgs),
+
     /// Manage config + credentials (~/.config/mosskeys/config.toml).
     #[command(subcommand)]
     Config(crate::commands::config::ConfigCmd),
@@ -111,5 +115,25 @@ impl Ctx {
             .unwrap_or_else(|| self.config.effective_base_url());
         let token = self.config.effective_token()?;
         Client::new(base_url, token)
+    }
+
+    /// The effective base URL for the read/verify path (CLI flag, env, config,
+    /// then prod default).
+    #[must_use]
+    pub fn base_url(&self, global: &GlobalArgs) -> String {
+        global
+            .base_url
+            .clone()
+            .map(|u| u.trim_end_matches('/').to_string())
+            .unwrap_or_else(|| self.config.effective_base_url())
+    }
+
+    /// Build a **public, read-only** client (no bearer token) for the verifier
+    /// read API. `verify` must never present a write credential.
+    ///
+    /// # Errors
+    /// Fails if the client cannot be built.
+    pub fn read_client(&self, global: &GlobalArgs) -> mosskeys_core::Result<Client> {
+        Client::new_read(self.base_url(global))
     }
 }

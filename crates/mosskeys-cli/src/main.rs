@@ -32,6 +32,7 @@ fn run(cli: &Cli) -> i32 {
         Command::Publish(args) => commands::publish::run(&cli.global, args),
         Command::Sync(args) => commands::sync::run(&cli.global, args),
         Command::Checkpoint(args) => commands::checkpoint::run(&cli.global, args),
+        Command::Verify(args) => commands::verify::run(&cli.global, args),
         Command::Config(cmd) => commands::config::run(&cli.global, cmd),
     };
 
