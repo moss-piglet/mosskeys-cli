@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/mosskeys-core", "crates/mosskeys-cli"]
 
 [workspace.package]
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
@@ -31,7 +31,7 @@ base64 = "0.22"
 thiserror = "2"
 toml = "0.8"
 directories = "5"
-clap = { version = "4", features = ["derive", "env"] }
+clap = { version = "4", features = ["derive", "env", "wrap_help"] }
 
 # Build against the sibling metamorphic-crypto working tree. metamorphic-log
 # declares `metamorphic-crypto = "0.10.5"` (caret) from crates.io; this patch

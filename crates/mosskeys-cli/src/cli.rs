@@ -2,14 +2,45 @@
 
 use std::path::PathBuf;
 
+use clap::builder::styling::{Color, RgbColor, Style, Styles};
 use clap::{Args, Parser, Subcommand};
 use mosskeys_core::{Client, Config};
 
 use crate::output::Reporter;
 
-/// MossKeys — publish public key material and sign checkpoints locally (BYOK).
+/// Brand-aligned help styles, mirroring the terminal theme (see `theme.rs`):
+/// section headers and usage in emerald, commands/flags (the tokens you type)
+/// in bright emerald, and argument placeholders in cyber cyan. clap only paints
+/// these on a TTY and honours `NO_COLOR`, so pipes and CI stay plain.
+const fn help_styles() -> Styles {
+    // Sampled from the web design system's dark-mode shades, identical to the
+    // palette in `theme.rs`.
+    const BRAND: Color = Color::Rgb(RgbColor(52, 211, 153)); // brand-400 / emerald
+    const BRAND_LIGHT: Color = Color::Rgb(RgbColor(110, 231, 183)); // emerald-300
+    const CYBER: Color = Color::Rgb(RgbColor(34, 211, 238)); // cyber-400
+    const DANGER: Color = Color::Rgb(RgbColor(252, 165, 165)); // red-300
+
+    Styles::styled()
+        .header(Style::new().bold().underline().fg_color(Some(BRAND)))
+        .usage(Style::new().bold().underline().fg_color(Some(BRAND)))
+        .literal(Style::new().bold().fg_color(Some(BRAND_LIGHT)))
+        .placeholder(Style::new().fg_color(Some(CYBER)))
+        .valid(Style::new().fg_color(Some(BRAND_LIGHT)))
+        .invalid(Style::new().bold().fg_color(Some(DANGER)))
+        .error(Style::new().bold().fg_color(Some(DANGER)))
+}
+
+/// mosskeys — publish public key material and sign checkpoints locally (BYOK).
 #[derive(Debug, Parser)]
-#[command(name = "mosskeys", version, about, long_about = None)]
+#[command(
+    name = "mosskeys",
+    version,
+    about,
+    long_about = None,
+    next_line_help = true,
+    max_term_width = 100,
+    styles = help_styles()
+)]
 pub struct Cli {
     #[command(flatten)]
     pub global: GlobalArgs,
