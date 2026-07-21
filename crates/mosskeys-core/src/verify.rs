@@ -176,8 +176,10 @@ pub fn verify_witness_cosigs(note_text: &str, trusted_vkeys: &[String]) -> Resul
             .find(|k| k.key_id() == sig.key_id() && k.name() == sig.name())
         {
             let label = suite_label(key);
-            // Prefer a hybrid (post-quantum) description over a classical one.
-            if best.is_none() || label.contains("hybrid") {
+            // Prefer a post-quantum description (hybrid composite, or an
+            // ML-DSA-44 witness cosignature) over a classical-only one.
+            let prefer = label.contains("hybrid") || label.contains("ML-DSA");
+            if best.is_none() || prefer {
                 best = Some(label);
             }
         }
@@ -206,6 +208,13 @@ fn suite_label(key: &VerifierKey) -> String {
                 // report the family without inventing a level.
                 Err(_) => "ML-DSA + Ed25519 (hybrid)".to_string(),
             }
+        }
+        // C2SP tlog-cosignature v1 witness lines: an independent witness co-signs
+        // the checkpoint with either a classical Ed25519 or a post-quantum
+        // ML-DSA-44 cosignature.
+        SignatureType::CosignatureV1Ed25519 => "Ed25519 (witness cosignature)".to_string(),
+        SignatureType::CosignatureV1MlDsa44 => {
+            "ML-DSA-44 (witness cosignature, post-quantum)".to_string()
         }
     }
 }
