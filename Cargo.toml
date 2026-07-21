@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/mosskeys-core", "crates/mosskeys-cli"]
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
@@ -18,7 +18,7 @@ homepage = "https://mosskeys.com"
 # metamorphic-crypto so both members resolve the SAME crypto core (no parallel
 # stack).
 metamorphic-log = { version = "=0.2.1", path = "../metamorphic-log" }
-metamorphic-crypto = { version = "=0.10.5", path = "../metamorphic-crypto" }
+metamorphic-crypto = { version = "=0.10.6", path = "../metamorphic-crypto" }
 
 reqwest = { version = "0.12", default-features = false, features = [
     "blocking",
@@ -34,9 +34,10 @@ directories = "5"
 clap = { version = "4", features = ["derive", "env"] }
 
 # Build against the sibling metamorphic-crypto working tree. metamorphic-log
-# declares `metamorphic-crypto = "0.10.5"` from crates.io; this patch redirects
-# that (and our direct dev-dependency) to the local checkout so there is exactly
-# one crypto core in the graph. The path version (0.10.5) satisfies the req.
+# declares `metamorphic-crypto = "0.10.5"` (caret) from crates.io; this patch
+# redirects that (and our direct dependency) to the local checkout so there is
+# exactly one crypto core in the graph. The path version (0.10.6) satisfies both
+# our `=0.10.6` req and metamorphic-log's caret `^0.10.5`.
 [patch.crates-io]
 metamorphic-crypto = { path = "../metamorphic-crypto" }
 
