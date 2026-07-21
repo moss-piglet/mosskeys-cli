@@ -91,10 +91,64 @@ gh attestation verify mosskeys-<version>-<target>.tar.gz \
   --repo moss-piglet/mosskeys-cli
 ```
 
-## Homebrew (deferred)
+## Homebrew
 
-Not yet shipped. Planned as a tap:
+Shipped as a tap. `brew install mosskeys-cli` installs the `mosskeys` binary from
+the signed GitHub Release tarball (the prebuilt artifact, not a from-source
+build), so Homebrew users get the same SBOM-tracked, cosign-signed, provenance-
+attested binary as a direct download.
 
 - tap repo: `moss-piglet/homebrew-mosskeys-cli`
-- formula: `mosskeys-cli`, so `brew install mosskeys-cli` installs the `mosskeys`
-  binary from the signed GitHub Release tarball.
+- formula: `Formula/mosskeys-cli.rb` (class `MosskeysCli`)
+- install:
+
+  ```sh
+  # Recommended: the fully-qualified name trusts and installs just this formula
+  # (Homebrew 6+ requires explicit trust for third-party taps).
+  brew install moss-piglet/mosskeys-cli/mosskeys-cli
+
+  # Or tap first, then trust the formula before the short name resolves:
+  brew tap moss-piglet/mosskeys-cli
+  brew trust --formula moss-piglet/mosskeys-cli/mosskeys-cli
+  brew install mosskeys-cli
+  ```
+
+The formula is regenerated on every `v*` tag by the release workflow's
+`update-tap` job, which runs
+[`.github/scripts/render-homebrew-formula.sh`](.github/scripts/render-homebrew-formula.sh)
+against the freshly published tarballs (computing SHA-256, since Homebrew requires
+it while the release standardizes on SHA-512) and pushes the result to the tap
+repo. The canonical copy of the current formula also lives in-repo at
+[`packaging/homebrew/mosskeys-cli.rb`](packaging/homebrew/mosskeys-cli.rb).
+
+### Tap security model
+
+`brew install` trusts only the formula's `url` + `sha256`; it does not run
+cosign, the SBOM, or the SLSA attestation. Write access to the tap is therefore
+release-critical, so the tap is hardened the same way as this repo, with one
+adjustment for automation:
+
+- `main` ruleset: block deletion and force-push, require signed commits, and
+  require a reviewed PR (1 approval). Human changes always go through review.
+- The release automation is a **GitHub App** (contents:write, installed on ONLY
+  the tap repo) added as a **bypass actor** on that ruleset, so `update-tap` can
+  push the formula bump directly while humans cannot.
+- `update-tap` mints a **short-lived** App installation token at runtime
+  (auto-expires ~1h, scoped to the single tap repo). No long-lived cross-repo PAT
+  is stored anywhere. The App credentials live in the protected `release`
+  environment, so only the tag-triggered release job can mint a token.
+- Enable secret scanning + push protection and Dependabot on the tap, and keep
+  org write access least-privilege.
+
+One-time setup, before the first tag that should update the tap:
+
+1. Create the tap repo `moss-piglet/homebrew-mosskeys-cli` with a `Formula/`
+   directory and seed `Formula/mosskeys-cli.rb` (copy `packaging/homebrew/mosskeys-cli.rb`).
+2. Register a GitHub App (owner `moss-piglet`) with repository permission
+   **Contents: Read and write**, generate a private key, and install the App on
+   ONLY `homebrew-mosskeys-cli`.
+3. Add two secrets to the `release` environment of `moss-piglet/mosskeys-cli`:
+   `HOMEBREW_TAP_APP_ID` (the App's numeric ID) and `HOMEBREW_TAP_APP_PRIVATE_KEY`
+   (the full `.pem` contents).
+4. On the tap repo, create the `main` ruleset above and add the App as a bypass
+   actor; enable secret scanning + push protection and Dependabot.

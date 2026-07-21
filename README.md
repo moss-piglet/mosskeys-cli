@@ -27,12 +27,20 @@ and a fresh resolve without `--locked` can pick an incompatible newer
 transitive release. Prebuilt binaries (below) are already built and are
 unaffected.
 
+On macOS, Homebrew installs the same prebuilt, signed binary from a tap:
+
+```sh
+brew install moss-piglet/mosskeys-cli/mosskeys-cli
+```
+
+The fully-qualified name trusts and installs just that formula (Homebrew 6+
+requires explicit trust for third-party taps).
+
 Prebuilt, signed binaries for macOS (arm64/x64), Linux (x64/arm64, including
 musl), and Windows (x64) are attached to every
 [GitHub Release](https://github.com/moss-piglet/mosskeys-cli/releases), each with
 a CycloneDX SBOM, `SHA512SUMS`, a cosign signature, and SLSA build provenance.
-See [RELEASING.md](RELEASING.md) to verify a download. Homebrew
-(`brew install mosskeys-cli`) is planned but not yet shipped.
+See [RELEASING.md](RELEASING.md) to verify a download.
 
 ## Layout
 
