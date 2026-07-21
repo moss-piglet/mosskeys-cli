@@ -35,8 +35,10 @@ const fn help_styles() -> Styles {
 #[command(
     name = "mosskeys",
     version,
-    about,
-    long_about = None,
+    about = "publish public keys, sign checkpoints locally (BYOK), and verify key history offline",
+    long_about = "mosskeys publishes public key material to a transparency log, signs \
+checkpoints locally so signing keys never leave your host (BYOK), and verifies key-history \
+proofs read-only and offline. Run a subcommand with --help for its full options.",
     next_line_help = true,
     max_term_width = 100,
     styles = help_styles()

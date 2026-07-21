@@ -1,6 +1,6 @@
 [package]
 name = "mosskeys-cli"
-description = "The MossKeys CLI + daemon: publish public key material, sign checkpoints locally (BYOK), and verify key-history proofs read-only and offline."
+description = "mosskeys CLI and daemon: publish public keys, sign checkpoints locally (BYOK), and verify key history read-only and offline."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
