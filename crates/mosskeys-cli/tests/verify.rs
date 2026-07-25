@@ -126,6 +126,64 @@ fn independent_witness_is_counted_as_a_witness() {
 }
 
 #[test]
+fn dual_line_log_lines_are_never_counted_as_witnesses() {
+    // Regression: a dual-line checkpoint carries TWO log signature lines under
+    // the origin name (hybrid + Ed25519 0x01). The 0x01 line is a LOG line, so
+    // even when the verifier pins the derived 0x01 vkey, the witness count
+    // stays zero — only a signature whose name differs from the origin counts.
+    let tree = tree_of(10);
+    let size = tree.size();
+    let root = tree.root_at(size);
+
+    let log_kp = generate_signing_keypair();
+    let note = metamorphic_log::checkpoint::sign_checkpoint_dual(
+        ORIGIN,
+        size,
+        &b64(&root),
+        ORIGIN,
+        &log_kp.secret_key,
+    )
+    .expect("dual checkpoint signing");
+
+    let pk_b64 = metamorphic_crypto::derive_public_key(&log_kp.secret_key).unwrap();
+    let pk = base64::engine::general_purpose::STANDARD
+        .decode(pk_b64)
+        .unwrap();
+    let log_hybrid_vkey = VerifierKey::new_hybrid(ORIGIN, &pk).unwrap().encode();
+    let log_ed25519_vkey = VerifierKey::new_ed25519_from_hybrid(ORIGIN, &pk)
+        .unwrap()
+        .encode();
+
+    let report = verify_witness_cosigs(&note, &[log_hybrid_vkey.clone(), log_ed25519_vkey.clone()])
+        .expect("both log lines verify");
+    assert_eq!(report.verified, 2, "both log lines verified");
+    assert_eq!(
+        report.witnesses, 0,
+        "the 0x01 line carries the origin name: it is a log line, not a witness"
+    );
+
+    // Adding a REAL independent witness cosignature (name != origin) counts
+    // exactly one witness, even with all three lines verified.
+    let body = Checkpoint::new(ORIGIN, size, root).unwrap().marshal();
+    let (witness_seed, witness_pk) = ed25519_generate_keypair();
+    let witness_name = "witness.example.com";
+    let witness_sig = sign_ed25519(&body, witness_name, &witness_seed).unwrap();
+    let mut parsed = SignedNote::parse(&note).unwrap();
+    let mut sigs = parsed.signatures().to_vec();
+    sigs.push(witness_sig);
+    parsed = SignedNote::new(parsed.text().to_string(), sigs).unwrap();
+    let merged = parsed.marshal();
+
+    let witness_vkey = VerifierKey::new_ed25519(witness_name, &witness_pk)
+        .unwrap()
+        .encode();
+    let report = verify_witness_cosigs(&merged, &[log_hybrid_vkey, log_ed25519_vkey, witness_vkey])
+        .expect("all three lines verify");
+    assert_eq!(report.verified, 3);
+    assert_eq!(report.witnesses, 1, "only the independent witness counts");
+}
+
+#[test]
 fn head_mismatch_consistency_fails() {
     // A genuine append-only extension verifies …
     let tree = tree_of(100);
