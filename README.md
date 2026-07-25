@@ -57,7 +57,7 @@ crates/
 | `mosskeys keygen` | Generate a `mosskeys/key-history/v1` key set **locally** (BYOK). Writes the private halves to a `0600` file (refuses to overwrite) and prints only the public halves. Byte-for-byte interoperable with the browser and Mix reference implementations. |
 | `mosskeys publish` | Append one or many public-key entries (flags, `--file`, or stdin JSON). Idempotent. |
 | `mosskeys sync` | Daemon: watch a JSON source and continuously publish. At-least-once via server dedup, with backoff and retry. |
-| `mosskeys checkpoint` | Two-phase local BYOK signing: fetch head, sign offline, publish (server verifies and head-matches). `--watch` runs it on a cadence. |
+| `mosskeys checkpoint` | Two-phase local BYOK signing: fetch head, sign offline (dual-line note: hybrid PQ + classical Ed25519 `0x01`, so stock C2SP witnesses can verify and cosign), publish (server verifies and head-matches). `--watch` runs it on a cadence. |
 | `mosskeys verify` | Read-only, offline-capable proof checking (no token). Verifies inclusion, append-only consistency, and witness co-signatures for a `--label` (online), a pinned `--checkpoint` note (offline), or a `--digest` at `--index` (supply-chain). Zero new crypto: every check runs through the same `metamorphic-log` verifier. |
 | `mosskeys config …` | Manage credentials and defaults (`~/.config/mosskeys/config.toml`, `MOSSKEYS_TOKEN` and `MOSSKEYS_BASE_URL` env). |
 

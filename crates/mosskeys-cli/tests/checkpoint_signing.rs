@@ -145,3 +145,44 @@ fn wrong_key_fails_verification() {
         "a note signed by another key must not verify"
     );
 }
+
+#[test]
+fn signed_note_is_dual_line_and_each_line_verifies_independently() {
+    let kp = generate_signing_keypair();
+    let note_text = sign_material(&material(42, 7), &kp.secret_key).unwrap();
+
+    let note = metamorphic_log::note::SignedNote::parse(&note_text).unwrap();
+
+    // Exactly two log lines, both under the origin name, with distinct key ids.
+    assert_eq!(note.signatures().len(), 2, "dual-line note");
+    assert!(note.signatures().iter().all(|s| s.name() == NAME));
+    assert_ne!(note.signatures()[0].key_id(), note.signatures()[1].key_id());
+
+    let public_key_b64 = metamorphic_crypto::derive_public_key(&kp.secret_key).unwrap();
+    let public_key = base64::engine::general_purpose::STANDARD
+        .decode(public_key_b64)
+        .unwrap();
+
+    // A PQ verifier accepts the hybrid line alone...
+    let hybrid_vkey = VerifierKey::new_hybrid(NAME, &public_key).unwrap();
+    assert_eq!(
+        note.verify(std::slice::from_ref(&hybrid_vkey))
+            .unwrap()
+            .len(),
+        1
+    );
+
+    // ...and a stock Ed25519-only C2SP witness accepts the derived 0x01 line
+    // alone (ignoring the unknown hybrid line).
+    let ed25519_vkey = VerifierKey::new_ed25519_from_hybrid(NAME, &public_key).unwrap();
+    assert_eq!(
+        note.verify(std::slice::from_ref(&ed25519_vkey))
+            .unwrap()
+            .len(),
+        1
+    );
+
+    // The server path (trusting the hybrid key) still parses the head.
+    let checkpoint = Checkpoint::from_signed_note(&note_text, &[hybrid_vkey]).unwrap();
+    assert_eq!(checkpoint.size(), 42);
+}
