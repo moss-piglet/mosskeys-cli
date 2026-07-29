@@ -17,6 +17,21 @@ The package name is `mosskeys-cli`; the command it installs is `mosskeys`.
 
 ## Install
 
+One line, macOS and Linux (x64/arm64, glibc/musl auto-detected; verifies the
+SHA-512 checksum before installing):
+
+```sh
+curl -fsSL https://mosskeys.com/install.sh | sh
+```
+
+Windows (PowerShell, x64):
+
+```powershell
+iwr https://mosskeys.com/install.ps1 -useb | iex
+```
+
+Or with cargo:
+
 ```sh
 cargo install mosskeys-cli --locked   # installs the `mosskeys` binary
 ```
