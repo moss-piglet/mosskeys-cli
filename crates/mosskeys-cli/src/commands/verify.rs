@@ -41,7 +41,7 @@ use mosskeys_core::{
 };
 
 use crate::cli::{Ctx, GlobalArgs};
-use crate::output::Reporter;
+use crate::output::{Reporter, short_root, with_commas};
 use crate::theme::Theme;
 
 #[derive(Debug, Args)]
@@ -402,37 +402,6 @@ struct ProofFile {
 
 fn read_text(path: &PathBuf) -> Result<String> {
     std::fs::read_to_string(path).map_err(|e| Error::Io(format!("reading {}: {e}", path.display())))
-}
-
-/// A compact `0x9acf…e8e8` display of a base64 root (first + last 2 bytes).
-fn short_root(root_b64: &str) -> String {
-    match base64_to_bytes(root_b64) {
-        Some(bytes) if bytes.len() >= 4 => {
-            let n = bytes.len();
-            format!(
-                "0x{:02x}{:02x}…{:02x}{:02x}",
-                bytes[0],
-                bytes[1],
-                bytes[n - 2],
-                bytes[n - 1]
-            )
-        }
-        _ => format!("0x{root_b64}"),
-    }
-}
-
-fn with_commas(n: u64) -> String {
-    let s = n.to_string();
-    let bytes = s.as_bytes();
-    let mut out = String::with_capacity(s.len() + s.len() / 3);
-    let first = bytes.len() % 3;
-    for (i, b) in bytes.iter().enumerate() {
-        if i != 0 && (i - first) % 3 == 0 {
-            out.push(',');
-        }
-        out.push(*b as char);
-    }
-    out
 }
 
 fn hex_to_bytes(s: &str) -> Option<Vec<u8>> {

@@ -300,6 +300,69 @@ impl Client {
         decode(self.http.get(url).send()?)
     }
 
+    // ---- Directory lookup surface (public, no bearer) ------------------------
+
+    /// `GET /api/:slug/directory-proof` — the directory head: the public
+    /// parameter set every CONIKS lookup proof verifies against.
+    ///
+    /// # Errors
+    /// Returns a typed [`ApiError`] for any non-2xx, or a transport error.
+    pub fn directory_head(&self, slug: &str) -> Result<crate::lookup::DirectoryHead> {
+        let url = format!("{}/api/{slug}/directory-proof", self.base_url);
+        decode(self.http.get(url).send()?)
+    }
+
+    /// `POST /api/:slug/oprf/evaluate` — the POPRF blinded evaluation (RFC 9497
+    /// step 1). Public and rate-limited server-side; the blinded element
+    /// reveals nothing about the label.
+    ///
+    /// # Errors
+    /// Returns a typed [`ApiError`] for any non-2xx (400 on a non-POPRF
+    /// namespace or a malformed element), or a transport error.
+    pub fn oprf_evaluate(
+        &self,
+        slug: &str,
+        blinded_element_b64: &str,
+    ) -> Result<crate::lookup::OprfEvaluation> {
+        let url = format!("{}/api/{slug}/oprf/evaluate", self.base_url);
+        let resp = self
+            .http
+            .post(url)
+            .json(&serde_json::json!({ "blinded_element": blinded_element_b64 }))
+            .send()?;
+        decode(resp)
+    }
+
+    /// `GET /api/:slug/lookup/index?index=` — the by-index presence/absence
+    /// proof (RFC 9497 step 2).
+    ///
+    /// # Errors
+    /// Returns a typed [`ApiError`] for any non-2xx (400 on a malformed index),
+    /// or a transport error.
+    pub fn lookup_index(
+        &self,
+        slug: &str,
+        index_b64: &str,
+    ) -> Result<crate::lookup::IndexedLookup> {
+        let mut url = reqwest::Url::parse(&format!("{}/api/{slug}/lookup/index", self.base_url))
+            .map_err(|e| Error::Config(format!("invalid base URL: {e}")))?;
+        url.query_pairs_mut().append_pair("index", index_b64);
+        decode(self.http.get(url).send()?)
+    }
+
+    /// `GET /api/:slug/lookup?label=` — the legacy VRF-blinded lookup (legacy
+    /// namespaces; the label is sent to the server for evaluation).
+    ///
+    /// # Errors
+    /// Returns a typed [`ApiError`] for any non-2xx (400 on a POPRF namespace,
+    /// which refuses cleartext lookups), or a transport error.
+    pub fn lookup_label(&self, slug: &str, label: &str) -> Result<crate::lookup::LabelLookup> {
+        let mut url = reqwest::Url::parse(&format!("{}/api/{slug}/lookup", self.base_url))
+            .map_err(|e| Error::Config(format!("invalid base URL: {e}")))?;
+        url.query_pairs_mut().append_pair("label", label);
+        decode(self.http.get(url).send()?)
+    }
+
     /// Attach the bearer token to a write request, or fail if this is a
     /// read-only client (a programmer error — read methods never call this).
     fn authed(

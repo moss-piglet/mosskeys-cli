@@ -74,6 +74,7 @@ crates/
 | `mosskeys sync` | Daemon: watch a JSON source and continuously publish. At-least-once via server dedup, with backoff and retry. |
 | `mosskeys checkpoint` | Two-phase local BYOK signing: fetch head, sign offline (dual-line note: hybrid PQ + classical Ed25519 `0x01`, so stock C2SP witnesses can verify and cosign), publish (server verifies and head-matches). `--watch` runs it on a cadence. |
 | `mosskeys verify` | Read-only, offline-capable proof checking (no token). Verifies inclusion, append-only consistency, and witness co-signatures for a `--label` (online), a pinned `--checkpoint` note (offline), or a `--digest` at `--index` (supply-chain). Zero new crypto: every check runs through the same `metamorphic-log` verifier. |
+| `mosskeys lookup <LABEL>` | Privacy-preserving directory lookup (no token): resolves a label to its current key-history head with a fully client-verified proof. On **POPRF (RFC 9497)** namespaces the label is blinded locally and never leaves the host — the server only sees a blinded element and a pseudorandom index. **Legacy VRF** namespaces are served too, with the output stating plainly that the operator saw the label at query time. |
 | `mosskeys config …` | Manage credentials and defaults (`~/.config/mosskeys/config.toml`, `MOSSKEYS_TOKEN` and `MOSSKEYS_BASE_URL` env). |
 
 Global flags: `--json` (machine output for agents and scripts), `--namespace/-n`,

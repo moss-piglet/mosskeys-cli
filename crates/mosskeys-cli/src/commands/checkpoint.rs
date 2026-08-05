@@ -100,7 +100,9 @@ fn checkpoint_once(
                 "note": note_text,
             }),
             |t| {
+                println!();
                 println!("{}", t.heading("dry-run — signed note (not published)"));
+                println!();
                 println!("{note_text}");
             },
         );
@@ -123,7 +125,14 @@ fn checkpoint_once(
                     "root": cp.root,
                     "note": cp.note,
                 }),
-                |_t| {},
+                |t| {
+                    println!();
+                    println!("{}", t.heading("checkpoint published"));
+                    println!();
+                    println!("{}", t.kv("origin", &cp.origin));
+                    println!("{}", t.kv("size", &crate::output::with_commas(cp.size)));
+                    println!("{}", t.kv("root", &crate::output::short_root(&cp.root)));
+                },
             );
             Ok(())
         }

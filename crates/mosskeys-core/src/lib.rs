@@ -22,6 +22,7 @@ pub mod client;
 pub mod config;
 pub mod error;
 pub mod keygen;
+pub mod lookup;
 pub mod signing;
 pub mod verify;
 
@@ -32,6 +33,7 @@ pub use client::{
 pub use config::Config;
 pub use error::{ApiError, ApiErrorCode, Error, Result, VerifyError};
 pub use keygen::{Artifact, KeySet, KeyTriple, NamespaceMeta, SecurityLevel};
+pub use lookup::{LookupOutcome, LookupPath, LookupReport, lookup};
 pub use verify::{
     CheckpointHead, CosignReport, parse_checkpoint_head, verify_consistency, verify_inclusion,
     verify_witness_cosigs,
