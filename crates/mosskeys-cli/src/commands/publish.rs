@@ -68,18 +68,60 @@ pub fn publish_all(client: &Client, r: Reporter, slug: &str, entries: &[EntryInp
             "published {} → index {} (size {})",
             entry.label, res.index, res.size
         ));
-        results.push(serde_json::json!({
-            "label": entry.label,
-            "index": res.index,
-            "size": res.size,
-            "root": res.root,
-        }));
+        results.push((entry.label.clone(), res));
     }
 
-    r.result(
-        &serde_json::json!({ "ok": true, "namespace": slug, "published": results }),
-        |_t| {},
-    );
+    let json = serde_json::json!({
+        "ok": true,
+        "namespace": slug,
+        "published": results
+            .iter()
+            .map(|(label, res)| serde_json::json!({
+                "label": label,
+                "index": res.index,
+                "size": res.size,
+                "root": res.root,
+            }))
+            .collect::<Vec<_>>(),
+    });
+
+    r.result(&json, |t| {
+        println!();
+        println!(
+            "{}",
+            t.heading(&format!(
+                "published {} {} to {slug}",
+                results.len(),
+                if results.len() == 1 {
+                    "entry"
+                } else {
+                    "entries"
+                },
+            ))
+        );
+        println!();
+        let width = results
+            .iter()
+            .map(|(label, _)| label.len())
+            .max()
+            .unwrap_or(0);
+        for (label, res) in &results {
+            println!(
+                "{}",
+                t.info(&format!(
+                    "{label:<width$}  →  index {:>4}  (size {})",
+                    res.index,
+                    res.size,
+                    width = width,
+                ))
+            );
+        }
+        println!();
+        println!(
+            "{}",
+            t.dim("  next: mosskeys lookup <LABEL> — or `mosskeys checkpoint` to anchor the head")
+        );
+    });
     Ok(())
 }
 
@@ -92,13 +134,22 @@ fn dry_run(r: Reporter, slug: &str, entries: &[EntryInput]) -> Result<()> {
             "entries": entries,
         }),
         |t| {
+            println!();
             println!(
                 "{}",
-                t.heading(&format!("dry-run — {} entry(ies)", entries.len()))
+                t.heading(&format!(
+                    "dry-run — {} {} for {slug} (nothing sent)",
+                    entries.len(),
+                    if entries.len() == 1 {
+                        "entry"
+                    } else {
+                        "entries"
+                    },
+                ))
             );
+            println!();
             for e in entries {
-                println!("{}", t.info(&format!("would publish to {slug}")));
-                println!("{}", t.field("label", &e.label));
+                println!("{}", t.info(&format!("would publish {}", e.label)));
             }
         },
     );

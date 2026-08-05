@@ -89,6 +89,11 @@ pub enum Command {
     /// witness co-signatures. Read-only and offline-capable; no token required.
     Verify(crate::commands::verify::VerifyArgs),
 
+    /// Look up a label's current key-history head with a client-verified proof.
+    /// Oblivious (RFC 9497 POPRF) on current namespaces: the label never leaves
+    /// this host. Read-only; no token required.
+    Lookup(crate::commands::lookup::LookupArgs),
+
     /// Manage config + credentials (~/.config/mosskeys/config.toml).
     #[command(subcommand)]
     Config(crate::commands::config::ConfigCmd),

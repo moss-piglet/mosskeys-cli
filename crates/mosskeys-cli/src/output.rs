@@ -153,6 +153,50 @@ fn verify_code(v: &VerifyError) -> &'static str {
         VerifyError::WitnessCosig => "cosignature_failed",
         VerifyError::NotAnchored => "not_anchored",
         VerifyError::DigestMismatch => "digest_mismatch",
+        VerifyError::Directory => "directory_proof_failed",
         VerifyError::Malformed(_) => "malformed_input",
     }
+}
+
+// ---- Shared display helpers (one rhythm across commands) -------------------
+
+/// A compact `0x9acf…e8e8` display of a base64 root/digest (first + last 2
+/// bytes). Shared by `verify`, `checkpoint`, and `lookup` so long hashes render
+/// identically everywhere.
+pub(crate) fn short_root(root_b64: &str) -> String {
+    match base64_to_bytes(root_b64) {
+        Some(bytes) if bytes.len() >= 4 => {
+            let n = bytes.len();
+            format!(
+                "0x{:02x}{:02x}…{:02x}{:02x}",
+                bytes[0],
+                bytes[1],
+                bytes[n - 2],
+                bytes[n - 1]
+            )
+        }
+        _ => format!("0x{root_b64}"),
+    }
+}
+
+/// Thousands-separated count (`48,123`) for index/size displays.
+pub(crate) fn with_commas(n: u64) -> String {
+    let s = n.to_string();
+    let bytes = s.as_bytes();
+    let mut out = String::with_capacity(s.len() + s.len() / 3);
+    let first = bytes.len() % 3;
+    for (i, b) in bytes.iter().enumerate() {
+        if i != 0 && (i - first) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(*b as char);
+    }
+    out
+}
+
+fn base64_to_bytes(s: &str) -> Option<Vec<u8>> {
+    use base64::Engine as _;
+    base64::engine::general_purpose::STANDARD
+        .decode(s.trim())
+        .ok()
 }

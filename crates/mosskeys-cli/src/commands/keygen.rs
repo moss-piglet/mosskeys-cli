@@ -94,6 +94,7 @@ pub fn run(global: &GlobalArgs, args: &KeygenArgs) -> Result<()> {
 
 fn dry_run(r: Reporter, artifact: &keygen::Artifact) -> Result<()> {
     r.result(&public_envelope(artifact, None, true), |t| {
+        println!();
         println!("{}", t.heading("dry-run — key set NOT written to disk"));
         print_public(t, artifact);
     });
@@ -109,6 +110,7 @@ fn report(r: Reporter, artifact: &keygen::Artifact, out: Option<&PathBuf>) {
     ));
     r.result(&public_envelope(artifact, out, false), |t| {
         if let Some(path) = out {
+            println!();
             println!(
                 "{}",
                 t.info(&format!(
@@ -118,6 +120,7 @@ fn report(r: Reporter, artifact: &keygen::Artifact, out: Option<&PathBuf>) {
             );
         }
         print_public(t, artifact);
+        println!();
         println!(
             "{}",
             t.dim(
@@ -129,7 +132,9 @@ fn report(r: Reporter, artifact: &keygen::Artifact, out: Option<&PathBuf>) {
 
 fn print_public(t: crate::theme::Theme, artifact: &keygen::Artifact) {
     let pub_keys = &artifact.public_keys;
+    println!();
     println!("{}", t.heading("PUBLIC halves (safe to publish):"));
+    println!();
     println!("{}", t.field("enc_x25519", &pub_keys.enc_x25519));
     println!("{}", t.field("enc_pq", &pub_keys.enc_pq));
     println!("{}", t.field("signing_pub", &pub_keys.signing_pub));

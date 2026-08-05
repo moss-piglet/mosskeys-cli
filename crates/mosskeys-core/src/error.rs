@@ -92,6 +92,12 @@ pub enum VerifyError {
     #[error("digest does not match the committed leaf at that index")]
     DigestMismatch,
 
+    /// A CONIKS directory proof did not verify: a DLEQ proof rejection, or an
+    /// index-bound presence/absence proof that does not recompute the pinned
+    /// directory root.
+    #[error("directory proof did not verify against the pinned directory root")]
+    Directory,
+
     /// A served or supplied artifact (proof node, root, note) was malformed.
     #[error("malformed verification input: {0}")]
     Malformed(String),

@@ -161,11 +161,13 @@ impl Theme {
 
     /// An aligned `key   value` detail row: a muted, left-padded key and an
     /// accented value, indented under the check lines for visual hierarchy.
+    /// Keys pad to 8 columns — the widest key in any command ("entries") — so
+    /// every command's detail rows align identically.
     #[must_use]
     pub fn kv(self, key: &str, value: &str) -> String {
         format!(
             "  {}  {}",
-            self.dim(&format!("{key:<6}")),
+            self.dim(&format!("{key:<8}")),
             self.accent(value)
         )
     }
