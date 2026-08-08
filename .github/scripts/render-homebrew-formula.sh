@@ -99,6 +99,9 @@ class MosskeysCli < Formula
 
   def install
     bin.install "mosskeys"
+    # Runs \`mosskeys completions <shell>\` at install time and links the
+    # scripts into the brew-managed completion dirs (bash/zsh/fish).
+    generate_completions_from_executable bin/"mosskeys", "completions"
   end
 
   test do
