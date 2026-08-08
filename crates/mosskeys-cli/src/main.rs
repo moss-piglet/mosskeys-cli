@@ -35,6 +35,7 @@ fn run(cli: &Cli) -> i32 {
         Command::Verify(args) => commands::verify::run(&cli.global, args),
         Command::Lookup(args) => commands::lookup::run(&cli.global, args),
         Command::Config(cmd) => commands::config::run(&cli.global, cmd),
+        Command::Completions(args) => commands::completions::run(args),
     };
 
     match result {

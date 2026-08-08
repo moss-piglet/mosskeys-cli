@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/mosskeys-core", "crates/mosskeys-cli"]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
@@ -32,6 +32,10 @@ thiserror = "2"
 toml = "0.8"
 directories = "5"
 clap = { version = "4", features = ["derive", "env", "wrap_help"] }
+# Generates the shell completion scripts for the `completions` subcommand
+# (same clap major as the CLI itself, so the derive model is the single
+# source of truth — no hand-maintained scripts to drift).
+clap_complete = "4"
 
 # Build against the sibling metamorphic-crypto working tree. metamorphic-log
 # declares `metamorphic-crypto = "0.11.0"` (caret) from crates.io; this patch

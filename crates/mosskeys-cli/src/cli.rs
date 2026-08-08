@@ -97,6 +97,9 @@ pub enum Command {
     /// Manage config + credentials (~/.config/mosskeys/config.toml).
     #[command(subcommand)]
     Config(crate::commands::config::ConfigCmd),
+
+    /// Print a shell completion script to stdout (bash, zsh, fish, elvish, powershell).
+    Completions(crate::commands::completions::CompletionsArgs),
 }
 
 /// Resolved runtime context shared by the data-plane commands.
